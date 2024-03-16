@@ -1,0 +1,13 @@
+alter session set "_ORACLE_SCRIPT"=true; 
+
+CREATE USER practica_obl IDENTIFIED BY practica_obl
+
+QUOTA 1M ON USERS;
+
+CREATE ROLE rol_practica;
+
+GRANT connect TO rol_practica;
+
+GRANT create table TO rol_practica;
+
+GRANT rol_practica TO practica_obl;

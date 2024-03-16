@@ -1,0 +1,9 @@
+Entidades: Equipo; Jugador; Entrenadores; Deporte
+
+Equipo: Nombre, Codigo equipo
+Jugador: Codigo jugador, nombre, edad, tutor, contacto, codigo equipo
+Entrenadores: Codigo entrenador, codigo equipo, nombre, contacto
+Deporte: Codigo deporte, deporte, categoria, genero
+
+
+Equipo x Deporte
