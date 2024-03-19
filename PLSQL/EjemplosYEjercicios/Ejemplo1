@@ -1,0 +1,12 @@
+/*Esto lo que hace es que de primeras declara una variable de una table que se la añade a un tipo
+luego se inserta en ella los valores que queremos y los mostramos finalmente con la función dbms_output.put_line*/
+
+DECLARE 
+    v_mivariable employees%rowtype;
+BEGIN
+    SELECT *
+    INTO v_mivariable
+    FROM employees e
+    WHERE employee_id = 100;
+    dbms_output.put_line('Empleado: '|| v_mivariable.first_name);
+END;

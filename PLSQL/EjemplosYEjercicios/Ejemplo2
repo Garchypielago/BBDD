@@ -1,0 +1,29 @@
+SET SERVEROUTPUT ON;
+
+DECLARE
+    v_variable_empleado1 employees.employee_id%TYPE;
+    v_variable_empleado2 employees.employee_id%TYPE;
+    v_pais1 countries.country_id%TYPE;
+    v_pais2 countries.country_id%TYPE;
+BEGIN
+    v_variable_empleado1 := &cod;
+    v_variable_empleado2 := &cod;
+
+    SELECT l.country_id INTO v_pais1
+    FROM locations l
+    JOIN departments d ON d.location_id = l.location_id
+    JOIN employees e ON e.department_id = d.department_id
+    WHERE e.employee_id = v_variable_empleado1;
+
+    SELECT l.country_id INTO v_pais2
+    FROM locations l
+    JOIN departments d ON d.location_id = l.location_id
+    JOIN employees e ON e.department_id = d.department_id
+    WHERE e.employee_id = v_variable_empleado2;
+
+    IF v_pais1 = v_pais2 THEN
+        dbms_output.put_line('Son del mismo país');
+    ELSE
+        dbms_output.put_line('No son del mismo país');
+    END IF;
+END;

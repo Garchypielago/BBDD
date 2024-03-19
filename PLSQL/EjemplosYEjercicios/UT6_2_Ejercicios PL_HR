@@ -1,0 +1,195 @@
+--EJERCICIO HR – EJERCICIOS PL
+--Utiliza la BBDD HR
+--1. Crear un bloque PL que visualice el departamento de un empleado que se pida al
+--usuario por teclado.
+SET SERVEROUTPUT ON;
+
+DECLARE
+    v_id_empleado employees.employee_id%TYPE;
+    v_nombre_departamento departments.department_name%TYPE;
+BEGIN
+    v_id_empleado := &cod;
+
+    SELECT d.department_name
+    INTO v_nombre_departamento
+    FROM employees e
+    JOIN departments d ON e.department_id = d.department_id
+    WHERE e.employee_id = v_id_empleado;
+
+    DBMS_OUTPUT.PUT_LINE('El empleado con ID ' || v_id_empleado || ' trabaja en el departamento ' || v_nombre_departamento);
+
+END;
+
+
+
+--2. Incrementar el salario 100€ a todos los trabajadores que sean ‘IT_PROG’, mediante un
+--bloque anónimo PL, asignando dicho valor a una variable declarada.
+
+ DECLARE
+    v_salary_increase NUMBER := 100;
+BEGIN
+    UPDATE employees
+    SET salary = salary + v_salary_increase
+    WHERE job_id = 'IT_PROG';
+
+    DBMS_OUTPUT.PUT_LINE('Se han incrementado los salarios de los empleados "IT_PROG" en ' || v_salary_increase || '€.');
+END;
+
+--3. Crea un bloque de PL/SQL que inserte un nuevo registro en la tabla de empleados. Con
+--las siguientes características:
+--3.a. Pedirá por teclado al usuario un código de empleado válido (employee_id)
+--3.b.Buscará al empleado que menos dinero gane que pertenezca al mismo
+--departamento que el que nos han pasado y duplicará todos sus datos menos
+--3.b.i. El id (sacarlo de la secuencia)
+--3.b.ii. El nombre y apellidos que será: PEPITO GRILLO
+--3.b.iii. La fecha de contratación será hoy.
+DECLARE
+    v_codempleado employees.employee_id%type;
+    v_departamento employees.department_id%type;
+    v_salariominimo number;
+    v_nuevoempleado employees%rowtype;
+BEGIN
+    v_codempleado := &cod;
+
+    select department_id into v_departamento
+    from employees
+    where employee_id = v_codempleado;
+
+    select min(salary) into v_salariominimo
+    from employees 
+    where department_id = v_departamento;
+
+    select * into v_nuevoempleado
+    from employees e
+    where e.salary = v_salariominimo
+    and e.department_id = v_departamento;
+
+    v_nuevoempleado.employee_id := 777;
+    v_nuevoempleado.hire_date := sysdate;
+    v_nuevoempleado.first_name := 'Pepito';
+    v_nuevoempleado.last_name := 'Grillo';
+
+    INSERT INTO employees VALUES (v_nuevoempleado);
+END;
+    
+
+
+
+
+--4. Diseñar un bloque PL que introduciendo el código de un empleado por teclado,
+--visualice el sueldo y su código, para posteriormente actualizar su comisión teniendo en
+--cuenta que si su salario es menor de 3.000 € su comisión será del 10% de este, si está
+--entre 3.000 y 5.000 del 15% y si es mayor de 5.000 el 20%. Posteriormente se
+--visualizará su comisión actualizada.
+DECLARE
+    v_codempleado employees.employee_id%type;
+    v_salario employees.salary%type;
+    v_comision employees.salary%type;
+BEGIN
+    v_codempleado := &cod;
+
+    SELECT salary INTO v_salario
+    FROM employees
+    WHERE employee_id = v_codempleado;
+
+    IF v_salario < 3000 THEN
+        v_comision := v_salario * 0.1;
+    ELSIF v_salario >= 3000 AND v_salario < 5000 THEN
+        v_comision := v_salario * 0.15;
+    ELSE
+        v_comision := v_salario * 0.2;
+    END IF;
+
+    UPDATE employees
+    SET commission = v_comision
+    WHERE employee_id = v_codempleado;
+
+    dbms_output.put_line('El código del empleado es: ' || v_codempleado || '. Cuyo salario es: ' || v_salario || ' y su comisión correspondiente es: ' || v_comision);
+END;
+
+
+--5. Introduciendo un año por teclado, decir si este es bisiesto o no.
+DECLARE
+    v_anio NUMBER;
+BEGIN
+    v_anio := &fecha;
+
+    IF ((MOD(v_anio, 4) = 0 AND MOD(v_anio, 100) != 0) OR (MOD(v_anio, 100) = 0 AND MOD(v_anio, 400) = 0)) THEN
+        dbms_output.put_line('El año es bisiesto');
+    ELSE
+        dbms_output.put_line('El año no es bisiesto');
+    END IF;
+END;
+--6. Diseñar un bloque de PL que le pida al usuario un código de empleado y que devuelva
+--el mayor divisor del salario del empleado.
+DECLARE 
+    v_codempleado employees.employee_id%TYPE;
+    v_salario employees.salary%TYPE;
+    v_maximodiv NUMBER;
+BEGIN
+    v_codempleado := &cod;
+    
+    SELECT salary INTO v_salario
+    FROM employees
+    WHERE employee_id = v_codempleado;
+
+    -- Calcular el máximo divisor común entre el salario y el código del empleado
+    v_maximodiv := calcular_mcd(v_salario, v_codempleado);
+
+    dbms_output.put_line('El máximo divisor común entre el salario y el código del empleado es: ' || v_maximodiv);
+END;
+--7. Dado un país introducido por teclado, obtener el número de empleados que hay en ese
+--país.
+DECLARE 
+ v_pais contries.country_name%type;
+ v_numempleados number;
+ 
+BEGIN
+    v_pais := &pais; 
+    
+    SELECT COUNT(*)
+    INTO v_numempleados
+    FROM employees e
+    JOIN departments d ON e.department_id = d.department_id
+    JOIN locations l ON d.location_id = l.location_id
+    JOIN countries c ON l.country_id = c.country_id
+    WHERE c.country_name = v_pais;
+
+    dbms_output.put_line('El número de empleados en ' || v_pais || ' es: ' || v_numero_empleados);
+END;
+--8. Crear una tabla llamada TANGULOS con tres columnas ángulo, seno, coseno. Rellenar
+--la misma mediante un bloque PL de todos los ángulos comprendidos entre 0 y 90, en
+--intervalos de diez en diez.
+
+CREATE TABLE TANGULOS (
+    angulo NUMBER,
+    seno NUMBER,
+    coseno NUMBER
+);
+DECLARE
+    v_angulo NUMBER := 0;
+    v_seno NUMBER;
+    v_coseno NUMBER;
+BEGIN
+    WHILE v_angulo <= 90 LOOP
+        v_seno := SIN(v_angulo * (3.14 / 180)); 
+        v_coseno := COS(v_angulo * (3.14 / 180)); 
+        
+        INSERT INTO TANGULOS VALUES (v_angulo, v_seno, v_coseno);
+        
+        v_angulo := v_angulo + 10; 
+    END LOOP;
+    
+    dbms_output.put_line('La tabla TANGULOS se ha llenado exitosamente.');
+END;
+
+--9. Haz un bloque anónimo que pida un id de empleado y cuente el número de vocales
+--que hay en su email.
+
+--10. Los departamentos de RRHH e ADMINISTRACIÓN se van a fusionar, por lo que
+--debemos hacer un proceso que:
+--10.a. Genere un nuevo departamento (RRHH+ADMIN)
+--10.b. Cuyo responsable ý localización será igual al del actual de RRHH
+--10.c. Asigne a los trabajadores de ambos departamentos el nuevo manager y el
+--nuevo departamento
+
