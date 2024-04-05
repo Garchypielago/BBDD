@@ -148,6 +148,7 @@ BEGIN
                     DBMS_OUTPUT.PUT_LINE('  '||H.ID||' - '||H.NOM||' - '||K.CONT||'EMP'||' - '||K.AVSAL||'€');
                 END LOOP;
             END LOOP;
+            
         END LOOP;
         DBMS_OUTPUT.PUT_LINE('  ');
     END LOOP;
