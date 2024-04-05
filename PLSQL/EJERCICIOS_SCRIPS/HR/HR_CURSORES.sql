@@ -81,11 +81,83 @@ Ana Fernández - 16.000
 SALES - DEPARTAMENTO DE VENTAS -10.000*/
 
 DECLARE
+    CURSOR TRABAJO IS (SELECT jo.job_id IDS, jo.job_title NOM
+                            FROM JOBS JO);
     
+    CURSOR SUELDOMEDIO (V_JOBID JOBS.JOB_ID%TYPE) IS 
+        (SELECT AVG(em.salary) AVSAL
+            FROM employees EM
+            WHERE em.job_id = V_JOBID);
+            
+    CURSOR EMPLEADOS (V_JOBID JOBS.JOB_ID%TYPE) IS 
+        (SELECT em.first_name NOM, em.last_name APE , em.salary SAL
+            FROM employees EM
+            WHERE em.job_id = V_JOBID)
+        ORDER BY 3 DESC;
 BEGIN
     
+    FOR I IN TRABAJO LOOP
+        FOR J IN SUELDOMEDIO(I.IDS) LOOP
+            DBMS_OUTPUT.PUT_LINE(I.IDS||' - '||I.NOM||' - '||J.AVSAL);
+            
+            FOR H IN EMPLEADOS(I.IDS) LOOP
+                DBMS_OUTPUT.PUT_LINE('  '||H.NOM||' '||H.APE||' - '||H.SAL);
+            
+            END LOOP;
+            DBMS_OUTPUT.PUT_LINE(' ');
+        END LOOP;
+    END LOOP;
+
 END;
 
 /*5. Necesitamos obtener una salida en que se indique por cada región el número de
 trabajadores y su salario medio y a continuación de cada región todos los países
 pertenecientes a esa región con su número de trabajadores y salario medio.*/
+
+DECLARE
+    CURSOR REGION IS (SELECT re.region_id ID, re.region_name NOM
+                        FROM REGIONS RE );
+                        
+    CURSOR EMP_RE (V_REGION REGIONS.REGION_ID%TYPE) IS 
+        (SELECT COUNT(1) CONT , NVL(ROUND(AVG(em.salary),2), 0) AVSAL
+            FROM employees EM
+            JOIN DEPARTMENTS DE ON DE.DEPARTMENT_ID = EM.DEPARTMENT_ID
+            JOIN LOCATIONS LO ON LO.LOCATION_ID = DE.LOCATION_ID
+            JOIN COUNTRIES CO ON CO.COUNTRY_ID = LO.COUNTRY_ID
+            WHERE CO.REGION_ID = V_REGION );
+            
+    CURSOR PAIS_RE (V_REGION REGIONS.REGION_ID%TYPE) IS 
+        (SELECT co.country_id ID, co.country_name NOM
+            FROM countries CO
+            WHERE co.region_id = V_REGION );
+    
+    CURSOR EMP_PA (V_PAIS COUNTRIES.COUNTRY_ID%TYPE) IS 
+        (SELECT COUNT(1) CONT , NVL(ROUND(AVG(em.salary),2), 0) AVSAL
+            FROM employees EM
+            JOIN DEPARTMENTS DE ON DE.DEPARTMENT_ID = EM.DEPARTMENT_ID
+            JOIN LOCATIONS LO ON LO.LOCATION_ID = DE.LOCATION_ID
+            WHERE LO.COUNTRY_ID = V_PAIS );
+    
+BEGIN
+    FOR I IN REGION LOOP
+        FOR J IN EMP_RE(I.ID) LOOP
+            DBMS_OUTPUT.PUT_LINE(I.ID||' - '||I.NOM||' - '||J.CONT||'EMP'||' - '||J.AVSAL||'€');
+            
+            FOR H IN PAIS_RE(I.ID) LOOP
+                FOR K IN EMP_PA(H.ID) LOOP
+                    DBMS_OUTPUT.PUT_LINE('  '||H.ID||' - '||H.NOM||' - '||K.CONT||'EMP'||' - '||K.AVSAL||'€');
+                END LOOP;
+            END LOOP;
+        END LOOP;
+        DBMS_OUTPUT.PUT_LINE('  ');
+    END LOOP;
+END;
+
+
+
+
+
+
+
+
+
