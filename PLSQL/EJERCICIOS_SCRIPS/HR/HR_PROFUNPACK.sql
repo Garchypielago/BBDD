@@ -86,10 +86,63 @@ END;
 departamento que se pasará como primer parámetro. El incremento será una cantidad
 en euros que se pasará como segundo parámetro en la llamada. El programa deberá
 informar del número de filas afectadas por la actualización.*/
+CREATE OR REPLACE FUNCTION SUBIDA 
+    (V_DEP EMPLOYEES.DEPARTMENT_ID%TYPE,
+    V_SUBIDA EMPLOYEES.SALARY%TYPE
+    )RETURN NUMBER IS
+    V_ACTU NUMBER:=0;
+BEGIN
+    UPDATE employees EM SET em.salary=em.salary+V_SUBIDA WHERE em.department_id=V_DEP;
+    
+    SELECT COUNT(em.employee_id)
+    INTO V_ACTU
+        FROM EMPLOYEES EM
+        WHERE em.department_id=V_DEP;
+    
+    RETURN V_ACTU;
+END SUBIDA;
 
+SELECT * FROM departments;
+SELECT * FROM EMPLOYEES EM WHERE em.department_id=80;
+
+DECLARE
+    DEP_ID NUMBER:=&DEP;
+    V_SUB NUMBER:=&DINERO;
+    V_ACTU NUMBER;
+BEGIN
+    V_ACTU:=SUBIDA(DEP_id, V_SUB);
+    dbms_output.put_line('ACTUALIZADAS: '||V_ACTU);
+END;
 
 /*6. Haz una función que reciba el id de empleado y devuelva el número de empleados que
 tiene a su cargo.*/
+CREATE OR REPLACE FUNCTION JEFE 
+    (V_MAN EMPLOYEES.MANAGER_ID%TYPE
+    )RETURN NUMBER IS
+    V_EMPS NUMBER:=0;
+    
+    CURSOR C1 (V_JEFE EMPLOYEES.MANAGER_ID%TYPE) IS
+        (SELECT em.employee_id ID
+            FROM EMPLOYEES EM
+            WHERE em.manager_id = V_JEFE
+            );
+BEGIN
+    FOR I IN C1(V_MAN) LOOP
+        V_EMPS:=V_EMPS+1;
+    END LOOP;
+        
+    RETURN V_EMPS;
+END JEFE;
+
+SELECT * FROM EMPLOYEES WHERE MANAGER_ID = 100;
+
+DECLARE
+    V_MAN EMPLOYEES.MANAGER_ID%TYPE :=&ID;
+    V_NUM NUMBER;
+BEGIN
+    V_NUM:=JEFE(V_MAN);
+    dbms_output.put_line('A CARGO: '||V_NUM);
+END;
 
 /*7. Haz un procedimiento que reciba como parámetro un código de empleado y Modifica
 el salario de un empleado en función del número de empleados que tiene a su cargo:
@@ -100,3 +153,45 @@ el salario de un empleado en función del número de empleados que tiene a su carg
     ? si es el PRESIDENTE su salario se incrementa en 30 euros
 Para saber el número de empleados a cargo de un trabajador debes llamar a la función
 del ejercicio anterior.*/
+CREATE OR REPLACE PROCEDURE SUBIDA_JEFE 
+    (V_MAN EMPLOYEES.MANAGER_ID%TYPE
+    ) IS
+    V_NUM NUMBER;
+    V_SUB NUMBER:=0;
+    
+    CURSOR PRESI IS
+        (SELECT em.employee_id ID
+            FROM EMPLOYEES EM
+            JOIN JOBS JOB ON job.job_id=em.job_id
+            WHERE job.job_title='President');
+    
+BEGIN
+    V_NUM:=JEFE(V_MAN);
+    
+    IF V_NUM>2 THEN
+        V_SUB:=110;
+    ELSIF V_NUM=2 THEN
+        V_SUB:=100;
+    ELSIF V_NUM=1 THEN
+        V_SUB:=80;
+    ELSE
+        V_SUB:=50;
+    END IF;
+    
+    FOR I IN PRESI LOOP
+        IF V_MAN = I.ID THEN
+            V_SUB:=V_SUB+30;
+        END IF;
+    END LOOP;
+    
+    UPDATE employees EM SET em.salary=em.salary+V_SUB WHERE em.employee_id=V_MAN;
+    
+END SUBIDA_JEFE;
+
+
+SELECT * FROM EMPLOYEES;
+
+
+
+
+
