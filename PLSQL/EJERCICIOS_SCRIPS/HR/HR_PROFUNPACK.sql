@@ -23,7 +23,7 @@ BEGIN
 END MODIFICA_DEP_DES;
 
 SELECT * FROM departments;
-CALL modifica_dep_des(220,'NOCTURNO'); --BIEN
+CALL modifica_dep_des(220,'NOC'); --BIEN
 
 
 /*3. Haz un procedimiento donde visualicemos los 2 departamentos más caros y el total de
@@ -82,6 +82,9 @@ BEGIN
     dbms_output.put_line('IRPF DE '||EMP_ID||': '||V_IRPF||'€');
 END;
 
+SELECT IRPF(EM.EMPLOYEE_ID), EM.* 
+    FROM EMPLOYEES EM;
+
 /*5. Escribir un programa que incremente el salario de los empleados de un determinado
 departamento que se pasará como primer parámetro. El incremento será una cantidad
 en euros que se pasará como segundo parámetro en la llamada. El programa deberá
@@ -113,6 +116,21 @@ BEGIN
     V_ACTU:=SUBIDA(DEP_id, V_SUB);
     dbms_output.put_line('ACTUALIZADAS: '||V_ACTU);
 END;
+
+CREATE OR REPLACE PROCEDURE SUBIDA_ACT 
+    (V_DEP EMPLOYEES.DEPARTMENT_ID%TYPE,
+    V_SUBIDA EMPLOYEES.SALARY%TYPE
+    ) IS
+BEGIN
+    UPDATE employees EM SET em.salary=em.salary+V_SUBIDA WHERE em.department_id=V_DEP;
+    dbms_output.put_line('ACTUALIZADAS: '||SQL%ROWCOUNT);
+
+END SUBIDA_ACT;
+
+SELECT * FROM departments;
+SELECT * FROM EMPLOYEES EM WHERE em.department_id=80;
+
+CALL subida_act(80,5);
 
 /*6. Haz una función que reciba el id de empleado y devuelva el número de empleados que
 tiene a su cargo.*/
@@ -187,6 +205,8 @@ BEGIN
     UPDATE employees EM SET em.salary=em.salary+V_SUB WHERE em.employee_id=V_MAN;
     
 END SUBIDA_JEFE;
+
+CALL subida_jefe(100);
 
 
 SELECT * FROM EMPLOYEES;
