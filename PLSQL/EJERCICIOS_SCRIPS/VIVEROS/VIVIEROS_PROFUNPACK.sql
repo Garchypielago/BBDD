@@ -127,18 +127,41 @@ Barcelona, su email quedará 'BCN-ES_Barcelona@viverosdelmundo.org'*/
 CREATE OR REPLACE FUNCTION F_CREAR_EMAIL
     (V_CODTI TIENDA.CODTIENDA%TYPE) RETURN VARCHAR2 IS
     V_EMAIL VARCHAR2(50);
+    
+    E_TIENDAOBLIGATORIA EXCEPTION;
 
 BEGIN
+    IF V_CODTI IS NULL THEN
+        RAISE E_TIENDAOBLIGATORIA;
+    END IF;
+
+    DBMS_OUTPUT.PUT_LINE('ESTOY AQUI');
     
     SELECT (TRIM(TI.codtienda)||'_'||TRIM(TI.ciudad)||'@viverosdelmundo.org')
     INTO V_EMAIL
         FROM TIENDA TI
         WHERE TI.CODTIENDA = V_CODTI;
+        --OR TI.codtienda = 'BCN-ES';
     
     RETURN V_EMAIL;
+    
+exception
+    WHEN NO_DATA_FOUND THEN 
+        --RAISE_APPLICATION_ERROR(-20001,'LA TIENDA NO EXISTE');
+        RETURN 'NO EXISTE';
+    when E_TIENDAOBLIGATORIA THEN
+        RETURN 'TIENDA OBLIGATORIA';
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE(SQLERRM);
+        RETURN 'ERROR GENERAL';
+        
 END F_CREAR_EMAIL;
 
 SELECT f_crear_email(TI.CODTIENDA), TI.* FROM TIENDA TI;
+SELECT f_crear_email(NULL) FROM dual;
+SELECT f_crear_email('PEPE') FROM dual;
+
+
 
 /*7. Crea una tabla tienda_email con las columnas:
             codTienda
