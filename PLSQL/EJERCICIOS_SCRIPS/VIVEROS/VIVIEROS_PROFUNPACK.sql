@@ -22,6 +22,9 @@ BEGIN
 EXCEPTION
     WHEN E_NULO THEN
         RETURN -1;
+        //CREACION DE TABLA DE ERRORES
+    when others THEN
+        RETURN -2;
         
 END f_calcular_precio_total_pedido;
 
@@ -51,7 +54,7 @@ BEGIN
         FROM pedido PE
         WHERE PE.codcliente=V_CODCLI;
     
-    IF V_SUMPE=-1 THEN
+    IF V_SUMPE<0 THEN
         RAISE E_ERRORFUNC;
     END IF;
         
@@ -62,6 +65,8 @@ EXCEPTION
         RETURN -1;
     WHEN E_ERRORFUNC THEN
         RETURN -1;
+    WHEN OTHERS THEN
+     RETURN -3;
 
 END f_calcular_suma_pedidos_cliente;
 
@@ -91,6 +96,8 @@ BEGIN
 EXCEPTION
     WHEN E_NULO THEN
         RETURN -1;
+    WHEN OTHERS THEN 
+        RETURN -2;
     
 END f_calcular_pagos_cliente;
 
@@ -117,12 +124,14 @@ BEGIN
         RAISE E_NULO;
     END IF;    
     
-    SELECT SUM(f_calcular_suma_pedidos_cliente(CL.codcliente)) SUMPE, f_calcular_pagos_cliente(CL.codcliente) PAGOS
+    /*SELECT SUM(f_calcular_suma_pedidos_cliente(CL.codcliente)) SUMPE, f_calcular_pagos_cliente(CL.codcliente) PAGOS
     INTO V_SUMPE, V_PAGOS
         FROM cliente CL
-        WHERE CL.codcliente = V_CODCLI;
+        WHERE CL.codcliente = V_CODCLI;*/
+        V_SUMPE:=f_calcular_suma_pedidos_cliente(V_CODCLI);
+        V_PAGOS:=f_calcular_pagos_cliente(V_CODCLI);
     
-    IF V_SUMPE =-1 OR V_PAGOS=-1 THEN
+    IF V_SUMPE <0 OR V_PAGOS<0 THEN
         RAISE E_ERRORFUNC;
     END IF;
     
@@ -133,9 +142,9 @@ EXCEPTION
     WHEN E_NULO THEN
         RETURN -1;
     WHEN E_ERRORFUNC THEN
-        RETURN -1;
+        RETURN -2;
     WHEN OTHERS THEN 
-        RETURN -1;
+        RETURN -3;
     
 
 END f_calcular_DEUDA;
@@ -222,7 +231,7 @@ EXCEPTION
     WHEN E_PROCERROR THEN
     dbms_output.PUT_LINE('ERROR: PROCEDIMIENTO FALLIDO');
     WHEN OTHERS THEN 
-    dbms_output.PUT_LINE('ERROR: GENERAL');
+    dbms_output.PUT_LINE('ERROR: GENERAL'||SQLERRM);
 
 END P_EMP_CLIDEUDAS;
 
@@ -294,11 +303,14 @@ CREATE OR REPLACE PROCEDURE P_RELLENAR_EMAILS IS
     CURSOR C1 IS (SELECT TI.codtienda COD
                     FROM TIENDA TI);
             
-    E_FUNCERROR EXCEPTION;
 BEGIN
     FOR I IN C1 LOOP
         INSERT INTO TIENDA_EMAIL VALUES (I.COD, f_crear_email(I.COD));
     END LOOP;
+    
+EXCEPTION
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('ESRROR GENERAL '||SQLERRM);
 END P_RELLENAR_EMAILS;
 
 CALL P_RELLENAR_EMAILS();
