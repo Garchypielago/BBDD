@@ -6,13 +6,26 @@ CREATE OR REPLACE FUNCTION f_calcular_precio_total_pedido
     (V_CODPE PEDIDO.CODPEDIDO%TYPE) RETURN NUMBER IS
     V_SUMPE NUMBER;
     
+    E_NULO EXCEPTION;
+    
 BEGIN
+    IF V_CODPE IS NULL THEN
+        RAISE E_NULO;
+    END IF;
+
     SELECT NVL(SUM(DE.preciounidad*DE.cantidad),0) SUMA
     INTO V_SUMPE
         FROM detalle_pedido DE
         WHERE DE.codpedido= V_CODPE;
     RETURN v_sumpe;
+    
+EXCEPTION
+    WHEN E_NULO THEN
+        RETURN -1;
+        
 END f_calcular_precio_total_pedido;
+
+
 
 SELECT * FROM pEDIDO;
 SELECT f_calcular_precio_total_pedido(PE.CODPEDIDO), PE.* FROM pedido PE;
@@ -23,13 +36,33 @@ función f_calcular_precio_total_pedido que has creado en el ejercicio anterior.*
 CREATE OR REPLACE FUNCTION f_calcular_suma_pedidos_cliente
     (V_CODCLI CLIENTE.CODCLIENTE%TYPE) RETURN NUMBER IS
     V_SUMPE NUMBER;
+    
+    E_ERRORFUNC EXCEPTION;
+    
+    E_NULO EXCEPTION;
+    
 BEGIN
+    IF V_CODCLI IS NULL THEN
+        RAISE E_NULO;
+    END IF;
+    
     SELECT NVL(SUM(f_calcular_precio_total_pedido(PE.CODPEDIDO)),0)
     INTO V_SUMPE
         FROM pedido PE
         WHERE PE.codcliente=V_CODCLI;
+    
+    IF V_SUMPE=-1 THEN
+        RAISE E_ERRORFUNC;
+    END IF;
         
     RETURN V_SUMPE;
+    
+EXCEPTION
+    WHEN E_NULO THEN
+        RETURN -1;
+    WHEN E_ERRORFUNC THEN
+        RETURN -1;
+
 END f_calcular_suma_pedidos_cliente;
 
 SELECT f_calcular_suma_pedidos_cliente(CL.codcliente), CL.* FROM CLIENTE CL;
@@ -40,7 +73,13 @@ suma total de los pagos realizados por ese cliente.*/
 CREATE OR REPLACE FUNCTION f_calcular_pagos_cliente
     (V_CODCLI CLIENTE.CODCLIENTE%TYPE) RETURN NUMBER IS
     V_SUMPA NUMBER;
+   
+    E_NULO EXCEPTION;
+    
 BEGIN
+    IF V_CODCLI IS NULL THEN
+        RAISE E_NULO;
+    END IF;
     
     SELECT NVL(SUM(PA.importetotal),0)
     INTO V_SUMPA
@@ -48,6 +87,10 @@ BEGIN
         WHERE PA.codcliente = v_codcli;
     
     RETURN v_sumpa;
+
+EXCEPTION
+    WHEN E_NULO THEN
+        RETURN -1;
     
 END f_calcular_pagos_cliente;
 
@@ -61,29 +104,80 @@ pagos. Utiliza las funciones que has creado en los últimos 2 ejercicios.*/
 CREATE OR REPLACE FUNCTION f_calcular_DEUDA
     (V_CODCLI CLIENTE.CODCLIENTE%TYPE) RETURN NUMBER IS
     V_DEUDA NUMBER;
-BEGIN
     
-    SELECT NVL(SUM(f_calcular_suma_pedidos_cliente(CL.codcliente)-f_calcular_pagos_cliente(CL.codcliente)),0) DIF
-    INTO V_DEUDA
+    V_SUMPE NUMBER;
+    V_PAGOS NUMBER;
+    
+    E_ERRORFUNC EXCEPTION;
+    
+    E_NULO EXCEPTION;
+    
+BEGIN
+    IF V_CODCLI IS NULL THEN
+        RAISE E_NULO;
+    END IF;    
+    
+    SELECT SUM(f_calcular_suma_pedidos_cliente(CL.codcliente)) SUMPE, f_calcular_pagos_cliente(CL.codcliente) PAGOS
+    INTO V_SUMPE, V_PAGOS
         FROM cliente CL
         WHERE CL.codcliente = V_CODCLI;
+    
+    IF V_SUMPE =-1 OR V_PAGOS=-1 THEN
+        RAISE E_ERRORFUNC;
+    END IF;
+    
+    V_DEUDA := ROUND(V_SUMPE-V_PAGOS,2);
         
     RETURN v_deuda;
+EXCEPTION
+    WHEN E_NULO THEN
+        RETURN -1;
+    WHEN E_ERRORFUNC THEN
+        RETURN -1;
+    WHEN OTHERS THEN 
+        RETURN -1;
     
+
 END f_calcular_DEUDA;
+
 SELECT F_calcular_deuda(CL.CODCLIENTE), CL.* FROM CLIENTE CL;
 
 CREATE OR REPLACE PROCEDURE P_calcular_DEUDA
     (V_CODCLI CLIENTE.CODCLIENTE%TYPE,
     V_DEUDA OUT NUMBER) IS
     
-BEGIN
+    V_SUMPE NUMBER;
+    V_PAGOS NUMBER;
     
-    SELECT NVL(SUM(f_calcular_suma_pedidos_cliente(CL.codcliente)-f_calcular_pagos_cliente(CL.codcliente)),0) DIF
-    INTO V_DEUDA
+    E_ERRORFUNC EXCEPTION;
+    
+    E_NULO EXCEPTION;
+    
+BEGIN
+    IF V_CODCLI IS NULL THEN
+        RAISE E_NULO;
+    END IF;
+    
+    SELECT SUM(f_calcular_suma_pedidos_cliente(CL.codcliente)) SUMPE, f_calcular_pagos_cliente(CL.codcliente) PAGOS
+    INTO V_SUMPE, V_PAGOS
         FROM cliente CL
         WHERE CL.codcliente = V_CODCLI;
+    IF V_SUMPE =-1 OR V_PAGOS=-1 THEN
+        RAISE E_ERRORFUNC;
+    END IF;
     
+    V_DEUDA := ROUND(V_SUMPE-V_PAGOS,2);
+EXCEPTION
+    WHEN E_NULO THEN
+    dbms_output.PUT_LINE('ERROR: ENTRADA NULO');
+        V_DEUDA := -1;
+    WHEN E_ERRORFUNC THEN
+    dbms_output.PUT_LINE('ERROR: FUNCION FALLIDA');
+        V_DEUDA := -1;
+    WHEN OTHERS THEN 
+    dbms_output.PUT_LINE('ERROR: GENERAL');
+        V_DEUDA := -1;
+
 END P_calcular_DEUDA;
 
 DECLARE
@@ -106,12 +200,30 @@ CREATE OR REPLACE PROCEDURE P_EMP_CLIDEUDAS
             WHERE CL.codempleadoventas = V_CODEMP);
     
     DEUDA NUMBER;
+    
+    E_NULO EXCEPTION;
+    E_PROCERROR EXCEPTION;
 BEGIN
+    IF V_CODEMP IS NULL THEN 
+        RAISE E_NULO;
+    END IF;
+
     dbms_output.put_line('EMPLEADO '||V_CODEMP);
     FOR I IN EMPLEADO LOOP
         P_calcular_DEUDA(I.COD,DEUDA);
+        IF DEUDA = -1 THEN 
+            RAISE E_PROCERROR;
+        END IF;
         dbms_output.put_line(I.COD||' TIENE '||DEUDA||'€ DE DEUDA');
     END LOOP;
+EXCEPTION
+    WHEN E_NULO THEN
+    dbms_output.PUT_LINE('ERROR: ENTRADA NULO');
+    WHEN E_PROCERROR THEN
+    dbms_output.PUT_LINE('ERROR: PROCEDIMIENTO FALLIDO');
+    WHEN OTHERS THEN 
+    dbms_output.PUT_LINE('ERROR: GENERAL');
+
 END P_EMP_CLIDEUDAS;
 
 
@@ -177,24 +289,12 @@ CREATE TABLE TIENDA_EMAIL(
 
 DROP TABLE TIENDA_EMAIL;
 
-CREATE OR REPLACE PROCEDURE P_RELLENAR_EMAIL
-    (V_CODTI TIENDA.CODTIENDA%TYPE) IS
-BEGIN
-    INSERT INTO TIENDA_EMAIL VALUES (V_CODTI, f_crear_email(V_CODTI));
-END P_RELLENAR_EMAIL;
-
-DECLARE 
-    CURSOR C1 IS (SELECT TI.codtienda COD
-                    FROM TIENDA TI);
-BEGIN
-    FOR I IN C1 LOOP
-        p_rellenar_email(I.COD);
-    END LOOP;
-END;
-
 CREATE OR REPLACE PROCEDURE P_RELLENAR_EMAILS IS
+
     CURSOR C1 IS (SELECT TI.codtienda COD
                     FROM TIENDA TI);
+            
+    E_FUNCERROR EXCEPTION;
 BEGIN
     FOR I IN C1 LOOP
         INSERT INTO TIENDA_EMAIL VALUES (I.COD, f_crear_email(I.COD));
