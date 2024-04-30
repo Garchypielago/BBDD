@@ -87,7 +87,8 @@ BEGIN
     SELECT COUNT(1)
     INTO V_CONTMIN
         FROM EMPLOYEES EM
-        WHERE em.salary<:NEW.MIN_SALARY;
+        WHERE em.salary<:NEW.MIN_SALARY
+        and em.employee_id=:new.job_id;
         
      IF V_CONTMIN > 0 THEN
          RAISE E_COBRAMENOS;
@@ -96,7 +97,8 @@ BEGIN
     SELECT COUNT(1)
     INTO V_CONTMAX
         FROM EMPLOYEES EM
-        WHERE em.salary<:NEW.MAX_SALARY;
+        WHERE em.salary<:NEW.MAX_SALARY
+        and em.employee_id=:new.job_id;
 
     IF V_CONTMAX > 0 THEN
         RAISE E_COBRAMAS;
